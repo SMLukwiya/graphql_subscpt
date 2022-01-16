@@ -76,20 +76,34 @@ const mutation = {
     const [post] = db.dummyPosts.splice(postIndex, 1);
 
     if (post.published) {
-      return pubsub.publish('post',{ post: { mutation: 'DELETED', data: post }})
+      pubsub.publish('post',{ post: { mutation: 'DELETED', data: post }})
     }
 
     return post;
   },
-  updatePost: (parent, args, {db}, info) => {
+  updatePost: (parent, args, {db, pubsub}, info) => {
     const {id, data} = args;
     const post = db.dummyPosts.find(post => post.id === id);
+    const originalPost = {...post}
 
     if (!post) throw new Error('Post not found');
 
     if (typeof data.title === 'string') { post.title = data.title }
     if (typeof data.body === 'string') { post.body = data.body }
-    if (typeof data.published === 'bool') { post.published === data.published }
+    if (typeof data.published === 'bool') {
+      post.published === data.published
+
+
+      if (originalPost.published && !post.published) {
+        // reference original post to ignore most recent post changes
+          pubsub.publish('post', { post: { mutation: 'DELETED', data: originalPost }})
+      } else if (!originalPost.published && post.published) {
+          pubsub.publish('post', { post: { mutation: 'CREATED', data: post }})
+      } else {
+          pubsub.publish('post', { post: { mutation: 'UPDATED', data: post }})
+      }
+
+    }
 
     return post;
   },
@@ -106,24 +120,29 @@ const mutation = {
     }
 
     db.dummyComments.push(comment);
-    pubsub.publish(`comment-${args.data.post}`, { comment })
+    pubsub.publish(`comment-${args.data.post}`,{ comment: { mutation: 'CREATED', data: comment }})
+    
     return comment;
   },
-  deleteComment: (parent, args, {db}, info) => {
+  deleteComment: (parent, args, {db, pubsub}, info) => {
     const commentIndex = db.dummyComments.findIndex(comment => comment.id === args.id);
 
     if (commentIndex === -1) throw new Error('Comment not found');
 
-    const deletedComment = db.dummyComments.splice(commentIndex, 1)
-    return deletedComment[0];
+    const [deletedComment] = db.dummyComments.splice(commentIndex, 1)
+
+    pubsub.publish(`comment-${deletedComment.post}`, { comment : { mutation: 'DELETED', data: deletedComment }})
+    return deletedComment;
   },
-  updateComment: (parent, args, {db}, info) => {
+  updateComment: (parent, args, {db, pubsub}, info) => {
     const {id, data} = args;
     const comment = db.dummyComments.find(comment => comment.id === id)
 
     if (!comment) throw new Error('No comment found');
 
     if (typeof data.text === 'string') { comment.text = data.text }
+
+    pubsub.publish(`comment-${comment.post}`, { comment: { mutation: 'UPDATED', data: comment }})
 
     return comment;
   }

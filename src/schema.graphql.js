@@ -25,7 +25,7 @@ module.exports = gql`
   }
 
   type Subscription {
-    comment(postId: ID!): Comment!
+    comment(postId: ID!): CommentSubscriptionPayload!
     post: PostSubscriptionPayload!
   }
 
@@ -93,5 +93,10 @@ module.exports = gql`
   type PostSubscriptionPayload {
     mutation: String!
     data: Post!
+  }
+
+  type CommentSubscriptionPayload {
+    mutation: String!
+    data: Comment!
   }
 `
