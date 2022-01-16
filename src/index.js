@@ -4,6 +4,9 @@ import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import express from 'express';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubsub = new PubSub();
 
 import typeDefs from './schema.graphql';
 import db from './db';
@@ -32,9 +35,11 @@ const resolvers = {
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
   const subscriptionServer = SubscriptionServer.create({
-    schema, execute, subscribe, onConnect(connectionParams, webSocket, context) {
-    console.log('Connected!')
-  },
+    schema, execute, subscribe,
+    onConnect(connectionParams, webSocket, context) {
+      console.log('Websocket Connected!')
+      return {db, pubsub}
+    },
   }, {
     server: httpServer,
     path: '/graphql'
@@ -50,8 +55,9 @@ const resolvers = {
       }
     }],
     context: {
-      db
-    }});
+      db, pubsub
+    }
+  });
 
     await server.start();
     // console.log(server)

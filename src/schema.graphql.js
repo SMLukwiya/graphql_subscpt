@@ -26,6 +26,7 @@ module.exports = gql`
 
   type Subscription {
     count: Int!
+    comment(postId: ID!): Comment!
   }
 
 
