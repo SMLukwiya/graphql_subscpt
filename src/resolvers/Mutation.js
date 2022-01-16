@@ -90,7 +90,7 @@ const mutation = {
 
     if (typeof data.title === 'string') { post.title = data.title }
     if (typeof data.body === 'string') { post.body = data.body }
-    if (typeof data.published === 'bool') {
+    if (typeof data.published === 'boolean') {
       post.published === data.published
 
 
@@ -121,7 +121,7 @@ const mutation = {
 
     db.dummyComments.push(comment);
     pubsub.publish(`comment-${args.data.post}`,{ comment: { mutation: 'CREATED', data: comment }})
-    
+
     return comment;
   },
   deleteComment: (parent, args, {db, pubsub}, info) => {
