@@ -25,8 +25,8 @@ module.exports = gql`
   }
 
   type Subscription {
-    count: Int!
     comment(postId: ID!): Comment!
+    post: PostSubscriptionPayload!
   }
 
 
@@ -88,5 +88,10 @@ module.exports = gql`
     text: String!
     author: User!
     post: Post!
+  }
+
+  type PostSubscriptionPayload {
+    mutation: String!
+    data: Post!
   }
 `

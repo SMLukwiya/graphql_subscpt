@@ -51,7 +51,7 @@ const mutation = {
     return user;
   },
 
-  createPost: (parent, args, {db}, info) => {
+  createPost: (parent, args, {db, pubsub}, info) => {
     const userExists = db.dummyUsers.some(user => user.id === args.data.author);
 
     if (!userExists) throw new Error('This user is not found')
@@ -62,17 +62,24 @@ const mutation = {
     }
 
     db.dummyPosts.push(post);
+    if (args.data.published) return pubsub.publish('post', {
+      post: { mutation: 'CREATED', data: post }
+    });
     return post;
   },
-  deletePost: (parent, args, {db}, info) => {
+  deletePost: (parent, args, {db, pubsub}, info) => {
     const postIndex = db.dummyPosts.findIndex(post => post.id === args.id)
 
     if (postIndex === -1) throw new Error('Post not found')
 
     db.dummyComments = db.dummyComments.filter(comment => comment.post === args.id);
-    db.dummyPosts.splice(postIndex, 1);
+    const [post] = db.dummyPosts.splice(postIndex, 1);
 
-    return db.dummyPosts[0]
+    if (post.published) {
+      return pubsub.publish('post',{ post: { mutation: 'DELETED', data: post }})
+    }
+
+    return post;
   },
   updatePost: (parent, args, {db}, info) => {
     const {id, data} = args;
